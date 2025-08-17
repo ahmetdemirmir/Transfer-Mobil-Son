@@ -85,6 +85,16 @@ input.qty-input { width: 80px; margin-left: 12px; font-size:18px;}
 #approvedContent h2 { margin-top:0; font-size:26px; }
 #approvedContent p { font-size:18px; }
 
+
+/* Kamera Modal */
+#cameraOverlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: none;
+  justify-content: center; align-items: center; z-index: 1000; }
+#cameraContent { background: #1e293b; color: #fff; padding: 18px 18px 10px; border-radius: 18px;
+  width: 95vw; max-width: 520px; text-align: center; position: relative; box-shadow: 0 8px 40px rgba(0,0,0,0.45); }
+#cameraContent h2 { margin: 0 0 6px 0; font-size: 22px; }
+#cameraContent .hint { margin: 6px 0 0; font-size: 13px; opacity: .8; }
+#cameraContent #qr-reader { width: 100%; max-width: 480px; margin: 8px auto 4px; display: block; border-radius: 12px; overflow: hidden; }
+
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://unpkg.com/html5-qrcode"></script>
@@ -143,7 +153,17 @@ input.qty-input { width: 80px; margin-left: 12px; font-size:18px;}
   </div>
 </div>
 
-<div id="qr-reader"></div>
+
+<!-- Kamera Modal -->
+<div id="cameraOverlay" style="display:none;">
+  <div id="cameraContent">
+    <button class="overlay-close" id="closeCameraBtn">×</button>
+    <h2>📷 Kamera</h2>
+    <div id="qr-reader"></div>
+    <p class="hint">EAN‑13/UPC odaklamak için telefonu sabit tutun.</p>
+  </div>
+</div>
+
 
 <div id="productList"></div>
 <div id="searchResults"></div>
@@ -335,6 +355,8 @@ let currentTrack = null; // video track reference
 const scanBarcodeBtn = document.getElementById('scanBarcodeBtn');
 const cameraSwitchBtn = document.getElementById('cameraSwitchBtn');
 const qrReaderDiv = document.getElementById('qr-reader');
+const cameraOverlay = document.getElementById('cameraOverlay');
+const closeCameraBtn = document.getElementById('closeCameraBtn');
 
 // Ses + titreşim
 let volumeLevel = 1.0;
@@ -374,21 +396,28 @@ function setBarcodeInputReadonly(state) {
   if (state && isMobile) manualBarcode.blur();
 }
 
+
+// Kamera modal kapatma
+closeCameraBtn.addEventListener('click', () => {
+  stopQrScanner();
+  cameraOverlay.style.display = 'none';
+});
 // Kamera Aç/Kapat
 scanBarcodeBtn.addEventListener('click', () => {
   if (!qrScannerActive) {
+    cameraOverlay.style.display = 'flex';
     qrReaderDiv.style.display = 'block';
     scanBarcodeBtn.textContent = 'Kamerayı Kapat';
     cameraSwitchBtn.style.display = 'inline-block';
     qrScannerActive = true;
     setBarcodeInputReadonly(true);
-    // Muhtemel açık klavyeyi kapat
     if (isMobile && document.activeElement && typeof document.activeElement.blur === 'function') {
       document.activeElement.blur();
     }
     startQrScanner();
   } else {
     stopQrScanner();
+    cameraOverlay.style.display = 'none';
   }
 });
 cameraSwitchBtn.addEventListener('click', () => {
@@ -768,6 +797,16 @@ function openMissingPrintWindow(autoPrint){
 #approvedContent h2 { margin-top:0; font-size:26px; }
 #approvedContent p { font-size:18px; }
 
+
+/* Kamera Modal */
+#cameraOverlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: none;
+  justify-content: center; align-items: center; z-index: 1000; }
+#cameraContent { background: #1e293b; color: #fff; padding: 18px 18px 10px; border-radius: 18px;
+  width: 95vw; max-width: 520px; text-align: center; position: relative; box-shadow: 0 8px 40px rgba(0,0,0,0.45); }
+#cameraContent h2 { margin: 0 0 6px 0; font-size: 22px; }
+#cameraContent .hint { margin: 6px 0 0; font-size: 13px; opacity: .8; }
+#cameraContent #qr-reader { width: 100%; max-width: 480px; margin: 8px auto 4px; display: block; border-radius: 12px; overflow: hidden; }
+
 </style></head><body>`);
   w.document.write(`<h2>Hatalı Ürünler Listesi</h2>`);
   if (!hatalilar.length) {
@@ -942,12 +981,15 @@ function searchAndShowPopup(val, fromCamera = false) {
   if (found && found.scanned === true) { showAlreadyApproved(found, fromCamera); playBeep(true); vibrate(true); return; }
   if (!found) {
     showErrorPopup("Bu ürün listede yok.");
+        if (fromCamera) { stopQrScanner(true); cameraOverlay.style.display = 'none'; }
     playBeep(false); vibrate(false);
     if (fromCamera && qrScannerActive) { stopQrScanner(true); qrScannerPausedAfterError = true; }
     return;
   }
-  openPopup(found);
-  playBeep(true); vibrate(true);
+  // Kamerayı geçici kapat ve modalı gizle (çakışma olmasın)
+if (fromCamera) { stopQrScanner(true); cameraOverlay.style.display = 'none'; }
+openPopup(found);
+playBeep(true); vibrate(true);
 }
 
 // Hata Pop-up
@@ -1064,6 +1106,7 @@ document.getElementById('mergeJsonInput').addEventListener('change', async funct
 
 
 function resumeScanner() {
+  cameraOverlay.style.display = 'flex';
   qrReaderDiv.style.display = 'block';
   scanBarcodeBtn.textContent = 'Kamerayı Kapat';
   cameraSwitchBtn.style.display = 'inline-block';
