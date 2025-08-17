@@ -184,6 +184,50 @@ input.qty-input { width: 80px; margin-left: 12px; font-size:18px;}
 })(); 
 // ==== /GÜVENLİ YENİDEN BAĞLAMA ====
 
+
+// ====== Güvenli Kamera Yaması (monkey-patch) ======
+(function(){
+  // stop: track'i bırak + scanner.clear
+  const __origStop = window.stopQrScanner;
+  window.stopQrScanner = function(resetOnly = false){
+    try { if (window.qrScanner && qrScanner.stop) qrScanner.stop().catch(()=>{}); } catch(e){}
+    try { if (window.qrScanner && qrScanner.clear) qrScanner.clear(); } catch(e){}
+    try { if (window.currentTrack && currentTrack.stop) currentTrack.stop(); } catch(e){}
+    // iç bayraklar
+    window.qrScannerActive = false;
+    window.currentTrack = null;
+    // orijinal UI temizliği
+    if (typeof __origStop === 'function') return __origStop(resetOnly);
+  };
+
+  // resume: active bayrağını START'tan sonra set etsin
+  const __origResume = window.resumeScanner;
+  window.resumeScanner = function(){
+    try { cameraOverlay.style.display = 'flex'; } catch(e){}
+    try { qrReaderDiv.style.display = 'block'; } catch(e){}
+    try { scanBarcodeBtn.textContent = 'Kamerayı Kapat'; } catch(e){}
+    try { cameraSwitchBtn.style.display = 'inline-block'; } catch(e){}
+    try { setBarcodeInputReadonly(true); } catch(e){}
+    setTimeout(() => {
+      try { startQrScanner(); } catch(e){}
+      // küçük gecikmeden sonra aktif bayrağını biz değil start akışı ayarlasın
+      setTimeout(() => {
+        try { captureTrackAndSetupTuning(); } catch(e){}
+      }, 200);
+    }, 250);
+  };
+
+  // start sonrasında aktif işaretini garantile (bazı tarayıcılarda promise dönmese bile)
+  try {
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden && cameraOverlay && cameraOverlay.style.display === 'flex' && !qrScannerActive) {
+        setTimeout(()=>{ try { startQrScanner(); } catch(e){} }, 300);
+      }
+    });
+  } catch(e){}
+})();
+// ====== /Güvenli Kamera Yaması ======
+
 </script>
 <script src="https://unpkg.com/html5-qrcode">
 // ==== GÜVENLİ YENİDEN BAĞLAMA (kamera akışı + popup) ====
@@ -272,6 +316,50 @@ input.qty-input { width: 80px; margin-left: 12px; font-size:18px;}
   };
 })(); 
 // ==== /GÜVENLİ YENİDEN BAĞLAMA ====
+
+
+// ====== Güvenli Kamera Yaması (monkey-patch) ======
+(function(){
+  // stop: track'i bırak + scanner.clear
+  const __origStop = window.stopQrScanner;
+  window.stopQrScanner = function(resetOnly = false){
+    try { if (window.qrScanner && qrScanner.stop) qrScanner.stop().catch(()=>{}); } catch(e){}
+    try { if (window.qrScanner && qrScanner.clear) qrScanner.clear(); } catch(e){}
+    try { if (window.currentTrack && currentTrack.stop) currentTrack.stop(); } catch(e){}
+    // iç bayraklar
+    window.qrScannerActive = false;
+    window.currentTrack = null;
+    // orijinal UI temizliği
+    if (typeof __origStop === 'function') return __origStop(resetOnly);
+  };
+
+  // resume: active bayrağını START'tan sonra set etsin
+  const __origResume = window.resumeScanner;
+  window.resumeScanner = function(){
+    try { cameraOverlay.style.display = 'flex'; } catch(e){}
+    try { qrReaderDiv.style.display = 'block'; } catch(e){}
+    try { scanBarcodeBtn.textContent = 'Kamerayı Kapat'; } catch(e){}
+    try { cameraSwitchBtn.style.display = 'inline-block'; } catch(e){}
+    try { setBarcodeInputReadonly(true); } catch(e){}
+    setTimeout(() => {
+      try { startQrScanner(); } catch(e){}
+      // küçük gecikmeden sonra aktif bayrağını biz değil start akışı ayarlasın
+      setTimeout(() => {
+        try { captureTrackAndSetupTuning(); } catch(e){}
+      }, 200);
+    }, 250);
+  };
+
+  // start sonrasında aktif işaretini garantile (bazı tarayıcılarda promise dönmese bile)
+  try {
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden && cameraOverlay && cameraOverlay.style.display === 'flex' && !qrScannerActive) {
+        setTimeout(()=>{ try { startQrScanner(); } catch(e){} }, 300);
+      }
+    });
+  } catch(e){}
+})();
+// ====== /Güvenli Kamera Yaması ======
 
 </script>
 </head>
@@ -1386,6 +1474,50 @@ function resumeScanner() {
   };
 })(); 
 // ==== /GÜVENLİ YENİDEN BAĞLAMA ====
+
+
+// ====== Güvenli Kamera Yaması (monkey-patch) ======
+(function(){
+  // stop: track'i bırak + scanner.clear
+  const __origStop = window.stopQrScanner;
+  window.stopQrScanner = function(resetOnly = false){
+    try { if (window.qrScanner && qrScanner.stop) qrScanner.stop().catch(()=>{}); } catch(e){}
+    try { if (window.qrScanner && qrScanner.clear) qrScanner.clear(); } catch(e){}
+    try { if (window.currentTrack && currentTrack.stop) currentTrack.stop(); } catch(e){}
+    // iç bayraklar
+    window.qrScannerActive = false;
+    window.currentTrack = null;
+    // orijinal UI temizliği
+    if (typeof __origStop === 'function') return __origStop(resetOnly);
+  };
+
+  // resume: active bayrağını START'tan sonra set etsin
+  const __origResume = window.resumeScanner;
+  window.resumeScanner = function(){
+    try { cameraOverlay.style.display = 'flex'; } catch(e){}
+    try { qrReaderDiv.style.display = 'block'; } catch(e){}
+    try { scanBarcodeBtn.textContent = 'Kamerayı Kapat'; } catch(e){}
+    try { cameraSwitchBtn.style.display = 'inline-block'; } catch(e){}
+    try { setBarcodeInputReadonly(true); } catch(e){}
+    setTimeout(() => {
+      try { startQrScanner(); } catch(e){}
+      // küçük gecikmeden sonra aktif bayrağını biz değil start akışı ayarlasın
+      setTimeout(() => {
+        try { captureTrackAndSetupTuning(); } catch(e){}
+      }, 200);
+    }, 250);
+  };
+
+  // start sonrasında aktif işaretini garantile (bazı tarayıcılarda promise dönmese bile)
+  try {
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden && cameraOverlay && cameraOverlay.style.display === 'flex' && !qrScannerActive) {
+        setTimeout(()=>{ try { startQrScanner(); } catch(e){} }, 300);
+      }
+    });
+  } catch(e){}
+})();
+// ====== /Güvenli Kamera Yaması ======
 
 </script>
 </body>
