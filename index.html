@@ -96,8 +96,184 @@ input.qty-input { width: 80px; margin-left: 12px; font-size:18px;}
 #cameraContent #qr-reader { width: 100%; max-width: 480px; margin: 8px auto 4px; display: block; border-radius: 12px; overflow: hidden; }
 
 </style>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="https://unpkg.com/html5-qrcode"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js">
+// ==== GÜVENLİ YENİDEN BAĞLAMA (kamera akışı + popup) ====
+(function(){
+  // Guard: required elements
+  if (!window.correctBtn || !window.incorrectBtn || !window.closePopupBtn) return;
+  const getBarcodeOf = (p)=> (p && (p.Barkodu || p["BARKODU"] || p["Barkod"] || "")) || "";
+
+  // 'Adet Doğru' akışı
+  correctBtn.onclick = function(){
+    if (!currentProduct) return;
+    currentProduct.scanned = true;
+    currentProduct.receivedQty = null;
+    currentProduct.reportedBy = "";
+    currentProduct.errorType = "";
+    currentProduct.errorNote = "";
+    // DOM'da sınıfı güncelle
+    try {
+      const bc = getBarcodeOf(currentProduct);
+      const itemDiv = document.querySelector(`[data-barcode='${bc}']`);
+      if (itemDiv) { itemDiv.classList.remove('incorrect'); itemDiv.classList.add('scanned'); }
+    } catch {}
+    saveToLocalStorage();
+    popupOverlay.style.display = 'none';
+    renderProducts && renderProducts();
+    if (typeof updateCounter === 'function') updateCounter();
+    if (typeof checkIfDone === 'function') checkIfDone();
+    // Kamerayı geri getir
+    if (typeof resumeScanner === 'function') resumeScanner();
+    currentProduct = null;
+  };
+
+  // 'Hatalı Bildir' aç
+  incorrectBtn.onclick = function(){
+    if (!currentProduct) return;
+    try {
+      incProductName.value = currentProduct["Stok Adı"] || "";
+      incBarcode.value   = getBarcodeOf(currentProduct);
+      incExpected.value  = currentProduct.Miktarı || currentProduct["Miktar"] || currentProduct["MİKTARI"] || 0;
+      incReceived.value  = (currentProduct.receivedQty != null) ? currentProduct.receivedQty : 0;
+      incType.value      = currentProduct.errorType || "";
+      incReporter.value  = currentProduct.reportedBy || "";
+      incNote.value      = currentProduct.errorNote || "";
+    } catch {}
+    incorrectOverlay.style.display = 'flex';
+    popupOverlay.style.display = 'none';
+  };
+
+  // Hatalı kaydet
+  if (window.btnSaveIncorrect) btnSaveIncorrect.onclick = function(){
+    if (!currentProduct) return;
+    const rec = parseInt(incReceived.value,10);
+    const who = (incReporter.value || "").trim();
+    const typ = (incType.value || "").trim();
+    if (isNaN(rec) || rec < 0) { alert("Gelen adet geçersiz."); return; }
+    if (!who) { alert("Hata bildiren zorunlu."); return; }
+    if (!typ) { alert("Hata tipi zorunlu."); return; }
+    currentProduct.scanned = false;
+    currentProduct.receivedQty = rec;
+    currentProduct.reportedBy = who;
+    currentProduct.errorType = typ;
+    currentProduct.errorNote = (incNote.value || "").trim();
+    saveToLocalStorage();
+    try {
+      const bc = getBarcodeOf(currentProduct);
+      const itemDiv = document.querySelector(`[data-barcode='${bc}']`);
+      if (itemDiv) { itemDiv.classList.remove('scanned'); itemDiv.classList.add('incorrect'); }
+    } catch {}
+    incorrectOverlay.style.display = 'none';
+    renderProducts && renderProducts();
+    if (typeof updateCounter === 'function') updateCounter();
+    if (typeof resumeScanner === 'function') resumeScanner();
+    currentProduct = null;
+  };
+
+  // Popup kapat → kamerayı geri getir
+  closePopupBtn.onclick = function(){
+    popupOverlay.style.display = 'none';
+    currentProduct = null;
+    if (typeof resumeScanner === 'function') resumeScanner();
+  };
+  if (window.closeIncorrectBtn) closeIncorrectBtn.onclick = function(){
+    incorrectOverlay.style.display = 'none';
+    currentProduct = null;
+    if (typeof resumeScanner === 'function') resumeScanner();
+  };
+})(); 
+// ==== /GÜVENLİ YENİDEN BAĞLAMA ====
+
+</script>
+<script src="https://unpkg.com/html5-qrcode">
+// ==== GÜVENLİ YENİDEN BAĞLAMA (kamera akışı + popup) ====
+(function(){
+  // Guard: required elements
+  if (!window.correctBtn || !window.incorrectBtn || !window.closePopupBtn) return;
+  const getBarcodeOf = (p)=> (p && (p.Barkodu || p["BARKODU"] || p["Barkod"] || "")) || "";
+
+  // 'Adet Doğru' akışı
+  correctBtn.onclick = function(){
+    if (!currentProduct) return;
+    currentProduct.scanned = true;
+    currentProduct.receivedQty = null;
+    currentProduct.reportedBy = "";
+    currentProduct.errorType = "";
+    currentProduct.errorNote = "";
+    // DOM'da sınıfı güncelle
+    try {
+      const bc = getBarcodeOf(currentProduct);
+      const itemDiv = document.querySelector(`[data-barcode='${bc}']`);
+      if (itemDiv) { itemDiv.classList.remove('incorrect'); itemDiv.classList.add('scanned'); }
+    } catch {}
+    saveToLocalStorage();
+    popupOverlay.style.display = 'none';
+    renderProducts && renderProducts();
+    if (typeof updateCounter === 'function') updateCounter();
+    if (typeof checkIfDone === 'function') checkIfDone();
+    // Kamerayı geri getir
+    if (typeof resumeScanner === 'function') resumeScanner();
+    currentProduct = null;
+  };
+
+  // 'Hatalı Bildir' aç
+  incorrectBtn.onclick = function(){
+    if (!currentProduct) return;
+    try {
+      incProductName.value = currentProduct["Stok Adı"] || "";
+      incBarcode.value   = getBarcodeOf(currentProduct);
+      incExpected.value  = currentProduct.Miktarı || currentProduct["Miktar"] || currentProduct["MİKTARI"] || 0;
+      incReceived.value  = (currentProduct.receivedQty != null) ? currentProduct.receivedQty : 0;
+      incType.value      = currentProduct.errorType || "";
+      incReporter.value  = currentProduct.reportedBy || "";
+      incNote.value      = currentProduct.errorNote || "";
+    } catch {}
+    incorrectOverlay.style.display = 'flex';
+    popupOverlay.style.display = 'none';
+  };
+
+  // Hatalı kaydet
+  if (window.btnSaveIncorrect) btnSaveIncorrect.onclick = function(){
+    if (!currentProduct) return;
+    const rec = parseInt(incReceived.value,10);
+    const who = (incReporter.value || "").trim();
+    const typ = (incType.value || "").trim();
+    if (isNaN(rec) || rec < 0) { alert("Gelen adet geçersiz."); return; }
+    if (!who) { alert("Hata bildiren zorunlu."); return; }
+    if (!typ) { alert("Hata tipi zorunlu."); return; }
+    currentProduct.scanned = false;
+    currentProduct.receivedQty = rec;
+    currentProduct.reportedBy = who;
+    currentProduct.errorType = typ;
+    currentProduct.errorNote = (incNote.value || "").trim();
+    saveToLocalStorage();
+    try {
+      const bc = getBarcodeOf(currentProduct);
+      const itemDiv = document.querySelector(`[data-barcode='${bc}']`);
+      if (itemDiv) { itemDiv.classList.remove('scanned'); itemDiv.classList.add('incorrect'); }
+    } catch {}
+    incorrectOverlay.style.display = 'none';
+    renderProducts && renderProducts();
+    if (typeof updateCounter === 'function') updateCounter();
+    if (typeof resumeScanner === 'function') resumeScanner();
+    currentProduct = null;
+  };
+
+  // Popup kapat → kamerayı geri getir
+  closePopupBtn.onclick = function(){
+    popupOverlay.style.display = 'none';
+    currentProduct = null;
+    if (typeof resumeScanner === 'function') resumeScanner();
+  };
+  if (window.closeIncorrectBtn) closeIncorrectBtn.onclick = function(){
+    incorrectOverlay.style.display = 'none';
+    currentProduct = null;
+    if (typeof resumeScanner === 'function') resumeScanner();
+  };
+})(); 
+// ==== /GÜVENLİ YENİDEN BAĞLAMA ====
+
+</script>
 </head>
 <body>
 <div id="header">
@@ -1123,6 +1299,94 @@ function resumeScanner() {
     renderProducts();
   }
 })();
+
+// ==== GÜVENLİ YENİDEN BAĞLAMA (kamera akışı + popup) ====
+(function(){
+  // Guard: required elements
+  if (!window.correctBtn || !window.incorrectBtn || !window.closePopupBtn) return;
+  const getBarcodeOf = (p)=> (p && (p.Barkodu || p["BARKODU"] || p["Barkod"] || "")) || "";
+
+  // 'Adet Doğru' akışı
+  correctBtn.onclick = function(){
+    if (!currentProduct) return;
+    currentProduct.scanned = true;
+    currentProduct.receivedQty = null;
+    currentProduct.reportedBy = "";
+    currentProduct.errorType = "";
+    currentProduct.errorNote = "";
+    // DOM'da sınıfı güncelle
+    try {
+      const bc = getBarcodeOf(currentProduct);
+      const itemDiv = document.querySelector(`[data-barcode='${bc}']`);
+      if (itemDiv) { itemDiv.classList.remove('incorrect'); itemDiv.classList.add('scanned'); }
+    } catch {}
+    saveToLocalStorage();
+    popupOverlay.style.display = 'none';
+    renderProducts && renderProducts();
+    if (typeof updateCounter === 'function') updateCounter();
+    if (typeof checkIfDone === 'function') checkIfDone();
+    // Kamerayı geri getir
+    if (typeof resumeScanner === 'function') resumeScanner();
+    currentProduct = null;
+  };
+
+  // 'Hatalı Bildir' aç
+  incorrectBtn.onclick = function(){
+    if (!currentProduct) return;
+    try {
+      incProductName.value = currentProduct["Stok Adı"] || "";
+      incBarcode.value   = getBarcodeOf(currentProduct);
+      incExpected.value  = currentProduct.Miktarı || currentProduct["Miktar"] || currentProduct["MİKTARI"] || 0;
+      incReceived.value  = (currentProduct.receivedQty != null) ? currentProduct.receivedQty : 0;
+      incType.value      = currentProduct.errorType || "";
+      incReporter.value  = currentProduct.reportedBy || "";
+      incNote.value      = currentProduct.errorNote || "";
+    } catch {}
+    incorrectOverlay.style.display = 'flex';
+    popupOverlay.style.display = 'none';
+  };
+
+  // Hatalı kaydet
+  if (window.btnSaveIncorrect) btnSaveIncorrect.onclick = function(){
+    if (!currentProduct) return;
+    const rec = parseInt(incReceived.value,10);
+    const who = (incReporter.value || "").trim();
+    const typ = (incType.value || "").trim();
+    if (isNaN(rec) || rec < 0) { alert("Gelen adet geçersiz."); return; }
+    if (!who) { alert("Hata bildiren zorunlu."); return; }
+    if (!typ) { alert("Hata tipi zorunlu."); return; }
+    currentProduct.scanned = false;
+    currentProduct.receivedQty = rec;
+    currentProduct.reportedBy = who;
+    currentProduct.errorType = typ;
+    currentProduct.errorNote = (incNote.value || "").trim();
+    saveToLocalStorage();
+    try {
+      const bc = getBarcodeOf(currentProduct);
+      const itemDiv = document.querySelector(`[data-barcode='${bc}']`);
+      if (itemDiv) { itemDiv.classList.remove('scanned'); itemDiv.classList.add('incorrect'); }
+    } catch {}
+    incorrectOverlay.style.display = 'none';
+    renderProducts && renderProducts();
+    if (typeof updateCounter === 'function') updateCounter();
+    if (typeof resumeScanner === 'function') resumeScanner();
+    currentProduct = null;
+  };
+
+  // Popup kapat → kamerayı geri getir
+  closePopupBtn.onclick = function(){
+    popupOverlay.style.display = 'none';
+    currentProduct = null;
+    if (typeof resumeScanner === 'function') resumeScanner();
+  };
+  if (window.closeIncorrectBtn) closeIncorrectBtn.onclick = function(){
+    incorrectOverlay.style.display = 'none';
+    currentProduct = null;
+    if (typeof resumeScanner === 'function') resumeScanner();
+  };
+})(); 
+// ==== /GÜVENLİ YENİDEN BAĞLAMA ====
+
 </script>
 </body>
 </html>
