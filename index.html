@@ -459,16 +459,29 @@ function startQrScanner() {
 }
 function stopQrScanner(resetOnly = false) {
   if (qrScanner) {
-    qrScanner.stop().then(() => {
+    qrScanner.stop().catch(()=>{}).finally(() => {
+      qrScannerActive = false;
+      currentTrack = null;
       if (!resetOnly) {
         qrReaderDiv.style.display = 'none';
         scanBarcodeBtn.textContent = '📷 Kamera ile Okut';
         cameraSwitchBtn.style.display = 'none';
-        qrScannerActive = false;
-        currentTrack = null;
         setBarcodeInputReadonly(false);
+      } else {
+        qrReaderDiv.style.display = 'none';
       }
-    }).catch(() => {});
+    });
+  } else {
+    qrScannerActive = false;
+    currentTrack = null;
+    if (!resetOnly) {
+      qrReaderDiv.style.display = 'none';
+      scanBarcodeBtn.textContent = '📷 Kamera ile Okut';
+      cameraSwitchBtn.style.display = 'none';
+      setBarcodeInputReadonly(false);
+    } else {
+      qrReaderDiv.style.display = 'none';
+    }
   }
 }
 
@@ -973,12 +986,12 @@ function openIncorrectFor(product) {
 document.getElementById('approvedDismissBtn').addEventListener('click', () => {
   approvedOverlay.style.display = 'none';
   focusIfAppropriate(quickSearch);
-  if (qrScannerPausedAfterError) { qrScannerPausedAfterError = false; if (qrScannerActive) { setTimeout(()=> startQrScanner(), 200); } }
+  if (qrScannerPausedAfterError) { qrScannerPausedAfterError = false; resumeScanner(); }
 });
 document.getElementById('closeApprovedBtn').addEventListener('click', () => {
   approvedOverlay.style.display = 'none';
   focusIfAppropriate(quickSearch);
-  if (qrScannerPausedAfterError) { qrScannerPausedAfterError = false; if (qrScannerActive) { setTimeout(()=> startQrScanner(), 200); } }
+  if (qrScannerPausedAfterError) { qrScannerPausedAfterError = false; resumeScanner(); }
 });
 document.getElementById('approvedReportBtn').addEventListener('click', () => {
   approvedOverlay.style.display = 'none';
@@ -1048,6 +1061,16 @@ document.getElementById('mergeJsonInput').addEventListener('change', async funct
     alert("Dosyalar okunamadı veya JSON formatı geçersiz.");
   }
 });
+
+
+function resumeScanner() {
+  qrReaderDiv.style.display = 'block';
+  scanBarcodeBtn.textContent = 'Kamerayı Kapat';
+  cameraSwitchBtn.style.display = 'inline-block';
+  qrScannerActive = true;
+  setBarcodeInputReadonly(true);
+  setTimeout(() => { startQrScanner(); }, 200);
+}
 
 // İlk yüklenişte varsa local storage'tan getir
 (function initFromStorage(){
