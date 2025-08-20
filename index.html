@@ -20,9 +20,11 @@
   #printBtn { background: linear-gradient(90deg,#607d8b,#a7b3c1); color:#fff; border:none;}
   #exportBtn { background: linear-gradient(90deg,#9c27b0,#ce93d8); color:#fff; border:none;}
   #resetBtn { background: linear-gradient(90deg,#e53935,#e57373); color:#fff; border:none;}
-  #qr-reader { width:95vw; max-width:400px; margin:10px auto 20px auto; display:none; border-radius:18px; box-shadow:0 0 10px #bbb;}
+  /* Inline scanner — no modal */
+  #qr-reader { width:95vw; max-width:480px; margin:10px auto 6px auto; display:none; border-radius:12px; overflow:hidden; box-shadow:0 0 10px #bbb; background:#000; }
+  #qr-hint { font-size:12px; color:#334155; margin-bottom:8px; display:none; }
   #progress { font-size: 20px; font-weight: bold; margin: 14px; color: #333; }
-  #productList { margin-top: 20px; text-align: left; }
+  #productList { margin-top: 8px; text-align: left; }
   .item { display: flex; justify-content: space-between; padding: 16px; margin: 8px 0; border-bottom: 1px solid #ddd; background-color: #e74c3c; color: #fff; font-size: 20px; cursor: pointer; border-radius: 10px;}
   .scanned { background-color: #2ecc71 !important; color: #fff; text-decoration: line-through; }
   .incorrect { background-color: #f39c12 !important; color: #fff; text-decoration: none; }
@@ -39,15 +41,6 @@
   #searchResults { margin-top:8px; }
   #searchResults .item { background: #3498db; color: #fff; border-radius:7px; font-size:18px; cursor:pointer;}
   #searchResults .item:hover { background:#2980b9;}
-
-  /* Kamera Modal */
-  #cameraOverlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: none;
-    justify-content: center; align-items: center; z-index: 1000; }
-  #cameraContent { background: #1e293b; color: #fff; padding: 18px 18px 10px; border-radius: 18px;
-    width: 95vw; max-width: 520px; text-align: center; position: relative; box-shadow: 0 8px 40px rgba(0,0,0,0.45); }
-  #cameraContent h2 { margin: 0 0 6px 0; font-size: 22px; }
-  #cameraContent .hint { margin: 6px 0 0; font-size: 13px; opacity: .8; }
-  #cameraContent #qr-reader { width: 100%; max-width: 480px; margin: 8px auto 4px; display: block; border-radius: 12px; overflow: hidden; }
 
   /* Tuning */
   #tuningPanel { display:flex; flex-wrap:wrap; gap:10px; justify-content:center; align-items:center; margin: 6px 0 12px; }
@@ -94,39 +87,9 @@
     <button id="resetBtn">🔄 Sıfırla</button>
   </div>
 
-  <!-- Kamera Tuning + Ses/Titreşim -->
-  <div id="tuningPanel">
-    <div class="group">
-      <label for="camZoomRange">Zoom</label>
-      <input id="camZoomRange" type="range" min="1" max="1" step="0.1" disabled>
-    </div>
-    <div class="group">
-      <label for="camExposureRange">Pozlama</label>
-      <input id="camExposureRange" type="range" min="-2" max="2" step="0.1" disabled>
-    </div>
-    <div class="group">
-      <label for="soundVolume">Ses</label>
-      <input id="soundVolume" type="range" min="0" max="1" step="0.05" value="1">
-    </div>
-    <div class="group">
-      <label for="vibPattern">Titreşim</label>
-      <select id="vibPattern">
-        <option value="off">Kapalı</option>
-        <option value="short" selected>Kısa</option>
-        <option value="long">Uzun</option>
-      </select>
-    </div>
-  </div>
-
-  <!-- Kamera Modal -->
-  <div id="cameraOverlay" style="display:none;">
-    <div id="cameraContent">
-      <button class="overlay-close" id="closeCameraBtn">×</button>
-      <h2>📷 Kamera</h2>
-      <div id="qr-reader"></div>
-      <p class="hint">EAN‑13/UPC odaklamak için telefonu sabit tutun.</p>
-    </div>
-  </div>
+  <!-- INLINE SCANNER (no modal) -->
+  <div id="qr-reader"></div>
+  <div id="qr-hint">EAN‑13/UPC odaklamak için telefonu sabit tutun.</div>
 
   <div id="productList"></div>
   <div id="searchResults"></div>
@@ -312,7 +275,7 @@
   // Mobil tespiti
   const isMobile = /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(navigator.userAgent);
 
-  // ==== Camera (Single Source of Truth) ====
+  // ==== Camera (Inline, non-modal) ====
   let qrScanner = null;
   let qrScannerActive = false;
   let currentFacingMode = "environment";
@@ -320,8 +283,7 @@
   const scanBarcodeBtn = document.getElementById('scanBarcodeBtn');
   const cameraSwitchBtn = document.getElementById('cameraSwitchBtn');
   const qrReaderDiv = document.getElementById('qr-reader');
-  const cameraOverlay = document.getElementById('cameraOverlay');
-  const closeCameraBtn = document.getElementById('closeCameraBtn');
+  const qrHint = document.getElementById('qr-hint');
 
   // Ses + titreşim
   let volumeLevel = 1.0;
@@ -386,8 +348,8 @@
 
   async function startCamera(){
     if (qrScannerActive) return;
-    cameraOverlay.style.display = 'flex';
     qrReaderDiv.style.display = 'block';
+    qrHint.style.display = 'block';
     scanBarcodeBtn.textContent = 'Kamerayı Kapat';
     cameraSwitchBtn.style.display = 'inline-block';
     setBarcodeInputReadonly(true);
@@ -416,28 +378,22 @@
     setTimeout(captureTrackAndSetupTuning, 200);
   }
 
-  async function stopCamera({hideModal=true}={}){
+  async function stopCamera(){
     try {
       if (qrScanner) { await qrScanner.stop(); await qrScanner.clear(); }
     } catch {}
     qrScannerActive = false;
     currentTrack = null;
-    if (hideModal) {
-      qrReaderDiv.style.display = 'none';
-      cameraOverlay.style.display = 'none';
-      scanBarcodeBtn.textContent = '📷 Kamera ile Okut';
-      cameraSwitchBtn.style.display = 'none';
-      setBarcodeInputReadonly(false);
-    } else {
-      qrReaderDiv.style.display = 'none';
-    }
+    qrReaderDiv.style.display = 'none';
+    qrHint.style.display = 'none';
+    scanBarcodeBtn.textContent = '📷 Kamera ile Okut';
+    cameraSwitchBtn.style.display = 'none';
+    setBarcodeInputReadonly(false);
   }
 
   function resumeCamera(){
-    // modal açık kalsın, yalnızca yeniden başlat
-    stopCamera({hideModal:false}).finally(()=>{
-      setTimeout(()=> startCamera(), 120);
-    });
+    stopCamera();
+    setTimeout(()=> startCamera(), 120);
   }
 
   function onScanSuccess(code){
@@ -445,8 +401,7 @@
     if (isFullEAN(code) && !isValidEAN(code)) {
       showErrorPopup("Geçersiz barkod: kontrol basamağı uyuşmuyor.");
       playBeep(false); vibrate(false);
-      // Pop-up görünürken akışı kes
-      stopCamera({hideModal:false});
+      // popup kapanana kadar akışı durdurma — inline olduğu için devam etsin
       return;
     }
     playBeep(true); vibrate(true);
@@ -457,7 +412,6 @@
   function onScanError(_err) { /* sessiz */ }
 
   // UI events
-  closeCameraBtn.addEventListener('click', () => stopCamera());
   scanBarcodeBtn.addEventListener('click', () => { qrScannerActive ? stopCamera() : startCamera(); });
   cameraSwitchBtn.addEventListener('click', () => {
     currentFacingMode = (currentFacingMode === "environment") ? "user" : "environment";
@@ -890,12 +844,9 @@
     if (found && found.scanned === true) { showAlreadyApproved(found, fromCamera); playBeep(true); vibrate(true); return; }
     if (!found) {
       showErrorPopup("Bu ürün listede yok.");
-      if (fromCamera && qrScannerActive) { stopCamera({hideModal:false}); }
       playBeep(false); vibrate(false);
       return;
     }
-    // Kamerayı çakışmaya düşürmemek için sadece durdur (modal kalsın)
-    if (fromCamera && qrScannerActive) { stopCamera({hideModal:false}); }
     openPopup(found);
     playBeep(true); vibrate(true);
   }
@@ -907,7 +858,6 @@
   }
   document.getElementById('closeErrorBtn').addEventListener('click', () => {
     errorOverlay.style.display = 'none';
-    if (!qrScannerActive) resumeCamera();
   });
 
   // Onaylı ürünü tekrar okutma popup'ı
@@ -917,15 +867,12 @@
     const barkod = product.Barkodu || product["BARKODU"] || product["Barkod"] || "";
     document.getElementById('approvedText').textContent = `${name} (${barkod}) daha önce 'Adet Doğru' olarak onaylandı. Hata bildirmek ister misin?`;
     approvedOverlay.style.display = 'flex';
-    if (fromCamera && qrScannerActive) { stopCamera({hideModal:false}); }
   }
   document.getElementById('approvedDismissBtn').addEventListener('click', () => {
     approvedOverlay.style.display = 'none';
-    if (!qrScannerActive) resumeCamera();
   });
   document.getElementById('closeApprovedBtn').addEventListener('click', () => {
     approvedOverlay.style.display = 'none';
-    if (!qrScannerActive) resumeCamera();
   });
   document.getElementById('approvedReportBtn').addEventListener('click', () => {
     approvedOverlay.style.display = 'none';
@@ -953,9 +900,6 @@
     }
   });
 
-  // Missing overlay close
-  closeMissingBtn.addEventListener('click', () => { missingOverlay.style.display = 'none'; });
-
   // İlk yüklenişte varsa local storage'tan getir
   (function initFromStorage(){
     const saved = loadFromLocalStorage();
@@ -964,13 +908,6 @@
       renderProducts();
     }
   })();
-
-  // Visibility geri dönüş — modal açıksa ve kamera kapalıysa tekrar başlat
-  document.addEventListener('visibilitychange', () => {
-    if (!document.hidden && cameraOverlay.style.display === 'flex' && !qrScannerActive) {
-      setTimeout(()=> startCamera(), 300);
-    }
-  });
 
 })(); // IIFE
 </script>
